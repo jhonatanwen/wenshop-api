@@ -1,4 +1,3 @@
-// Tipos básicos para o backend
 export interface Product {
   id: number;
   name: string;

@@ -1,6 +1,5 @@
 import { Product, User } from "../types";
 
-// Dados mockados para desenvolvimento
 export const mockProducts: Product[] = [
   {
     id: 1,

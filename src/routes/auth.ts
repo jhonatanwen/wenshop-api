@@ -7,7 +7,6 @@ import { LoginRequest, RegisterRequest, User } from "../types";
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-// POST /api/auth/login - Login do usuário
 router.post("/login", async (req, res) => {
   try {
     const { email, password }: LoginRequest = req.body;
@@ -19,7 +18,6 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Buscar usuário (em um app real, seria no banco de dados)
     const user = mockUsers.find((u) => u.email === email);
 
     if (!user) {
@@ -29,7 +27,6 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Para o MVP, vamos aceitar a senha "senha123" diretamente
     const isValidPassword =
       password === "senha123" ||
       (await bcrypt.compare(password, user.password));
@@ -41,12 +38,10 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Gerar token JWT
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
       expiresIn: "7d",
     });
 
-    // Retornar dados do usuário (sem a senha)
     const { password: _, ...userWithoutPassword } = user;
 
     return res.json({
@@ -64,7 +59,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// POST /api/auth/register - Registro de novo usuário
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password }: RegisterRequest = req.body;
@@ -76,7 +70,6 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    // Verificar se usuário já existe
     const existingUser = mockUsers.find((u) => u.email === email);
     if (existingUser) {
       return res.status(400).json({
@@ -85,10 +78,8 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    // Hash da senha
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Criar novo usuário (em um app real, seria salvo no banco)
     const newUser: User = {
       id: mockUsers.length + 1,
       name,
@@ -99,14 +90,12 @@ router.post("/register", async (req, res) => {
 
     mockUsers.push(newUser);
 
-    // Gerar token JWT
     const token = jwt.sign(
       { userId: newUser.id, email: newUser.email },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    // Retornar dados do usuário (sem a senha)
     const { password: _, ...userWithoutPassword } = newUser;
 
     return res.status(201).json({
@@ -124,7 +113,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// GET /api/auth/me - Obter dados do usuário autenticado
 router.get("/me", (req, res) => {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");
