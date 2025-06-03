@@ -3,33 +3,62 @@ import { mockProducts } from "../data/mockData";
 
 const router = express.Router();
 
-// GET /api/products - Listar todos os produtos
 router.get("/", (req, res) => {
   try {
-    const { category, search, limit } = req.query;
+    const {
+      category,
+      search,
+      limit,
+      sortBy = "name",
+      order = "asc",
+    } = req.query;
     let filteredProducts = [...mockProducts];
 
-    // Filtrar por categoria
+    if (search && typeof search === "string") {
+      const searchTerms = search
+        .toLowerCase()
+        .split(" ")
+        .filter((term) => term.length > 0);
+
+      filteredProducts = filteredProducts.filter((product) => {
+        const searchableText = [
+          product.name,
+          product.description,
+          product.category,
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return searchTerms.every((term) => searchableText.includes(term));
+      });
+    }
+
     if (category && typeof category === "string") {
       filteredProducts = filteredProducts.filter(
-        (p) => p.category === category
+        (product) => product.category.toLowerCase() === category.toLowerCase()
       );
     }
 
-    // Filtrar por busca
-    if (search && typeof search === "string") {
-      const searchLower = search.toLowerCase();
-      filteredProducts = filteredProducts.filter(
-        (p) =>
-          p.name.toLowerCase().includes(searchLower) ||
-          p.description.toLowerCase().includes(searchLower)
-      );
+    if (sortBy && typeof sortBy === "string") {
+      filteredProducts.sort((a, b) => {
+        let aVal: any = a[sortBy as keyof typeof a];
+        let bVal: any = b[sortBy as keyof typeof b];
+
+        if (typeof aVal === "string") {
+          aVal = aVal.toLowerCase();
+          bVal = bVal.toLowerCase();
+        }
+
+        if (order === "desc") {
+          return bVal > aVal ? 1 : bVal < aVal ? -1 : 0;
+        }
+        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+      });
     }
 
-    // Limitar resultados
     if (limit && typeof limit === "string") {
       const limitNum = parseInt(limit);
-      if (!isNaN(limitNum)) {
+      if (!isNaN(limitNum) && limitNum > 0) {
         filteredProducts = filteredProducts.slice(0, limitNum);
       }
     }
@@ -38,6 +67,13 @@ router.get("/", (req, res) => {
       success: true,
       data: filteredProducts,
       total: filteredProducts.length,
+      filters: {
+        search: search || null,
+        category: category || null,
+        limit: limit ? parseInt(limit as string) : null,
+        sortBy,
+        order,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -47,7 +83,6 @@ router.get("/", (req, res) => {
   }
 });
 
-// GET /api/products/:id - Buscar produto por ID
 router.get("/:id", (req, res) => {
   try {
     const productId = parseInt(req.params.id);
@@ -72,10 +107,8 @@ router.get("/:id", (req, res) => {
   }
 });
 
-// GET /api/products/featured - Produtos em destaque
 router.get("/featured/list", (req, res) => {
   try {
-    // Retorna os primeiros 3 produtos como destaque
     const featuredProducts = mockProducts.slice(0, 3);
 
     return res.json({
